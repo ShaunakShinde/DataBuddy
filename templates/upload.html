@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% block scripts %}
+<script>
+    function uploadCSV() {
+        var fileInput = document.getElementById('csvFileInput');
+        var file = fileInput.files[0];
+
+        // Check if a file is selected
+        if (!file) {
+            // Show a pop-up message
+            alert('Please select a CSV file!');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('file', file);
+
+        // Show loading indicator
+        showLoading();
+
+        // Use Fetch API to send the file to the server
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            // Hide loading indicator
+            hideLoading();
+
+            // Check if the response is a successful redirect
+            if (response.redirected) {
+                // Redirect to the results page with the processed file path
+                window.location.href = '/results?file_path=static/processed_data.csv';
+            } else {
+                console.error('Error:', response.statusText);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+
+            // Hide loading indicator in case of an error
+            hideLoading();
+        });
+    }
+
+    function downloadProcessedData(processedData) {
+        // Construct a Blob containing the processed data
+        var blob = new Blob([processedData], { type: 'text/csv' });
+
+        // Create a download link
+        var link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'processed_data.csv';
+
+        // Append the link to the body
+        document.body.appendChild(link);
+
+        // Trigger a click on the link to start the download
+        link.click();
+
+        // Remove the link from the body
+        document.body.removeChild(link);
+    }
+
+    function showLoading() {
+        // Display the loading spinner
+        document.getElementById('loadingSpinner').style.display = 'block';
+    }
+
+    function hideLoading() {
+        // Hide the loading spinner
+        document.getElementById('loadingSpinner').style.display = 'none';
+    }
+
+    // Function to update gradient position based on mouse position
+    function updateGradientPosition(event) {
+        var gradientContainer = document.getElementById('gradientContainer');
+        var mouseX = event.clientX;
+        var mouseY = event.clientY;
+        var containerRect = gradientContainer.getBoundingClientRect();
+        var offsetX = mouseX - containerRect.left;
+        var offsetY = mouseY - containerRect.top;
+        var backgroundPositionX = (offsetX / containerRect.width) * 100;
+        var backgroundPositionY = (offsetY / containerRect.height) * 100;
+        gradientContainer.style.backgroundPosition = `${backgroundPositionX}% ${backgroundPositionY}%`;
+    }
+
+    // Attach mousemove event listener to update gradient position
+    document.addEventListener('mousemove', updateGradientPosition);
+</script>
+{% endblock %}
+
+<!-- Upload Start -->
+<div class="container-fluid d-flex justify-content-center align-items-center" style="min-height: 100vh; background-color: #007bff;">
+    <div class="container" id="gradientContainer" style="background: linear-gradient(to bottom right, #007bff, #ffffff);">
+        <div class="row gx-5 justify-content-center">
+            <div class="col-lg-6">
+                <div class="upload-form h-100 d-flex flex-column justify-content-center text-center p-5 wow zoomIn" data-wow-delay="0.6s">
+                    <h1 class="text-white mb-4">Upload CSV</h1>
+                    <form id="csvUploadForm" enctype="multipart/form-data" onsubmit="event.preventDefault(); uploadCSV();">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-12">
+                                <label for="csvFileInput" class="form-label text-white">Choose a CSV file:</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control bg-light border-0" id="csvFileInput" accept=".csv" style="height: 55px;" aria-describedby="csvFileAddon">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <!-- Button and spinner wrapper -->
+                            <div class="d-flex align-items-center justify-content-center">
+                                <button type="submit" class="btn btn-dark" id="csvFileAddon">Upload</button>
+                                <!-- Loading Spinner -->
+                                <div class="spinner-border ms-2" role="status" id="loadingSpinner" style="display: none;">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Upload End -->
+{% endblock %}
